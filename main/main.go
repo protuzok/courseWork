@@ -207,6 +207,15 @@ MainLoop:
 			}
 
 			printTable(athletes)
+		case 6:
+			athletes, err := backend.GroupAndSortTable(pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
 
 		default:
 			fmt.Println("Спробуйте ще раз")

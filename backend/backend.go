@@ -109,3 +109,27 @@ func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 
 	return athletes, nil
 }
+
+func GroupAndSortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+	selectRecordsSQL := `SELECT * FROM athletes
+		WHERE press_сnt = (SELECT MAX(press_сnt) FROM athletes)
+		AND jump_distance = (SELECT MIN(jump_distance) FROM athletes)
+		ORDER BY name`
+
+	rows, err := pool.Query(ctx, selectRecordsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to group and sort table: %w", err)
+	}
+
+	var athletes []Athlete
+
+	for i := 0; rows.Next(); i++ {
+		athletes = append(athletes, Athlete{})
+		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+		if err != nil {
+			return nil, fmt.Errorf("impossible to group and sort table: %w", err)
+		}
+	}
+
+	return athletes, nil
+}

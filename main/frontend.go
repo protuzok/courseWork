@@ -17,6 +17,7 @@ func printOptions() {
 	fmt.Println("3) Видалити поле(-я) з таблиці за id")
 	fmt.Println("4) Змінити поле таблиці за id")
 	fmt.Println("5) Відсортувати таблицю за run_100m")
+	fmt.Println("6) Згрупувати таблицю за max press_cnt та min jump_distance, сортування за іменем")
 }
 
 func takeOption() (int, error) {
