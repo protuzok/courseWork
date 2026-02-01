@@ -8,11 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-const dbURL = "postgres://user:password@localhost:5432/course_work_db"
 
 func main() {
 	logFile, err := startupLogger()
@@ -52,10 +48,54 @@ func main() {
 		case 0:
 			return
 		case 1:
-			err = addField(pool, ctx)
+			inputRecord := takeInput("Введіть значення полів запису:")
+
+			fields := strings.Fields(inputRecord)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного поля.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun100m, err := strconv.ParseFloat(fields[2], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun3km, err := strconv.ParseFloat(fields[3], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parsePressCnt, err := strconv.ParseInt(fields[4], 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseJumpDistance, err := strconv.ParseFloat(fields[5], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			a := Athlete{
+				-1,
+				fields[0],
+				fields[1],
+				float32(parseRun100m),
+				float32(parseRun3km),
+				int(parsePressCnt),
+				float32(parseJumpDistance),
+			}
+
+			err = addField(a, pool, ctx)
 			if err != nil {
 				log.Println(err)
-				os.Exit(1)
+				fmt.Println("Спробуйте ще раз")
+				continue
 			}
 		case 2:
 			err = printTable(pool, ctx)
@@ -138,20 +178,6 @@ func main() {
 
 // -----------------------------------------------------------------
 
-func startupLogger() (*os.File, error) {
-	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("impossible to open log file: %w", err)
-	}
-
-	log.SetOutput(logFile)
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-
-	return logFile, nil
-}
-
-// -----------------------------------------------------------------
-
 func printOptions() {
 	fmt.Println("")
 	fmt.Println("============================")
@@ -195,103 +221,4 @@ func takeInput(instruction string) (input string) {
 	}
 
 	return input
-}
-
-// -----------------------------------------------------------------
-
-func startupTable(ctx context.Context, dbURL string) (p *pgxpool.Pool, err error) {
-	p, err = pgxpool.New(ctx, dbURL)
-	if err != nil {
-		return nil, fmt.Errorf("error start up data base table: %w", err)
-	}
-
-	createTableSQL := `CREATE TABLE IF NOT EXISTS athletes(
-		id SERIAL PRIMARY KEY, 
-		name TEXT NOT NULL, 
-		surname TEXT NOT NULL, 
-		run_100m REAL NOT NULL,
-		run_3km REAL NOT NULL,
-		press_сnt INT NOT NULL,
-		jump_distance REAL NOT NULL
-	);`
-
-	_, err = p.Exec(ctx, createTableSQL)
-	if err != nil {
-		return nil, fmt.Errorf("error start up data base table: %w", err)
-	}
-	return p, nil
-}
-
-func addField(pool *pgxpool.Pool, ctx context.Context) error {
-	input := takeInput("Введіть значення полів запису:")
-
-	var fields = strings.Fields(input)
-
-	sqlArgs := make([]any, len(fields))
-	for i, v := range fields {
-		sqlArgs[i] = v
-	}
-
-	insertRecordSQL := "INSERT INTO athletes(name, surname, run_100m, run_3km, press_сnt, jump_distance) VALUES ($1, $2, $3, $4, $5, $6)"
-
-	_, err := pool.Exec(ctx, insertRecordSQL, sqlArgs...)
-	if err != nil {
-		return fmt.Errorf("impossible to add field: %w", err)
-	}
-
-	return nil
-}
-
-func printTable(pool *pgxpool.Pool, ctx context.Context) error {
-	fmt.Println("Таблиця атлетів:")
-	fmt.Printf("%-5s %-20s %-20s %-10s %-10s %-10s %-10s \n", "id", "name", "surname", "run100m", "run3km", "pressCnt", "jumpDist")
-
-	selectRecordsSQL := "SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance FROM athletes"
-
-	rows, _ := pool.Query(ctx, selectRecordsSQL)
-	defer rows.Close()
-
-	for rows.Next() {
-		var a Athlete
-		err := rows.Scan(&a.id, &a.name, &a.surname, &a.run100m, &a.run3km, &a.pressCnt, &a.jumpDistance)
-		if err != nil {
-			return fmt.Errorf("impossible to print table: %w", err)
-		}
-
-		fmt.Printf("%-5d %-20s %-20s %-10.2f %-10.2f %-10d %-10.2f \n", a.id, a.name, a.surname, a.run100m, a.run3km, a.pressCnt, a.jumpDistance)
-	}
-
-	return nil
-}
-
-func deleteFields(pool *pgxpool.Pool, ctx context.Context) error {
-	input := takeInput("Введіть список id для видалення:")
-
-	fields := strings.Fields(input)
-	if len(fields) == 0 {
-		fmt.Println("Не введено жодного ID.")
-		return nil
-	}
-
-	deleteRecordsSQL := "DELETE FROM athletes WHERE id = ANY($1::int[])"
-
-	_, err := pool.Exec(ctx, deleteRecordsSQL, fields)
-	if err != nil {
-		return fmt.Errorf("impossible to delete fields: %w", err)
-	}
-
-	return nil
-}
-
-func updateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
-	updateRecordSQL := `UPDATE athletes 
-		SET (name, surname, run_100m, run_3km, press_сnt, jump_distance) = ($1, $2, $3, $4, $5, $6) 
-		WHERE id = $7`
-
-	_, err := pool.Exec(ctx, updateRecordSQL, a.name, a.surname, a.run100m, a.run3km, a.pressCnt, a.jumpDistance, a.id)
-	if err != nil {
-		return fmt.Errorf("impossible to update field: %w", err)
-	}
-
-	return nil
 }
