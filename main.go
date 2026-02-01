@@ -3,12 +3,15 @@ package main
 import (
 	"bufio"
 	"context"
+	"courseWork/backend"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 )
+
+const dbURL = "postgres://user:password@localhost:5432/course_work_db"
 
 func main() {
 	logFile, err := startupLogger()
@@ -27,7 +30,7 @@ func main() {
 
 	ctx := context.Background()
 
-	pool, err := startupTable(ctx, dbURL)
+	pool, err := backend.StartupTable(ctx, dbURL)
 	if err != nil {
 		fmt.Println("Помилка старту таблиці бази даних: ", err)
 		log.Println(err)
@@ -82,24 +85,24 @@ MainLoop:
 				continue
 			}
 
-			a := Athlete{
-				-1,
-				fields[0],
-				fields[1],
-				float32(parseRun100m),
-				float32(parseRun3km),
-				int(parsePressCnt),
-				float32(parseJumpDistance),
+			a := backend.Athlete{
+				Id:           -1,
+				Name:         fields[0],
+				Surname:      fields[1],
+				Run100m:      float32(parseRun100m),
+				Run3km:       float32(parseRun3km),
+				PressCnt:     int(parsePressCnt),
+				JumpDistance: float32(parseJumpDistance),
 			}
 
-			err = addField(a, pool, ctx)
+			err = backend.AddField(a, pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
 				continue
 			}
 		case 2:
-			err = printTable(pool, ctx)
+			err = backend.PrintTable(pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -127,7 +130,7 @@ MainLoop:
 				ids[i] = int(parseIDs)
 			}
 
-			err = deleteFields(ids, pool, ctx)
+			err = backend.DeleteFields(ids, pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -175,23 +178,27 @@ MainLoop:
 				continue
 			}
 
-			a := Athlete{
-				int(parseId),
-				fields[0],
-				fields[1],
-				float32(parseRun100m),
-				float32(parseRun3km),
-				int(parsePressCnt),
-				float32(parseJumpDistance),
+			a := backend.Athlete{
+				Id:           int(parseId),
+				Name:         fields[0],
+				Surname:      fields[1],
+				Run100m:      float32(parseRun100m),
+				Run3km:       float32(parseRun3km),
+				PressCnt:     int(parsePressCnt),
+				JumpDistance: float32(parseJumpDistance),
 			}
 
-			err = updateField(a, pool, ctx)
+			err = backend.UpdateField(a, pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
 				continue
 			}
 
+		case 5:
+			// немає вводу від користувача
+			//
+			// відсортувати простою вибіркою
 		default:
 			fmt.Println("Спробуйте ще раз")
 			continue
@@ -244,4 +251,18 @@ func takeInput(instruction string) (input string) {
 	}
 
 	return input
+}
+
+// -----------------------------------------------------------------
+
+func startupLogger() (*os.File, error) {
+	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to open log file: %w", err)
+	}
+
+	log.SetOutput(logFile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	return logFile, nil
 }
