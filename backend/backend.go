@@ -43,41 +43,13 @@ func AddField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-// todo зробити окремий метод для виводу таблиці та для отримання таблиці у вигляді масиву атлетів
-func PrintTable(pool *pgxpool.Pool, ctx context.Context) error {
-	fmt.Println("Таблиця атлетів:")
-	fmt.Printf("%-5s %-20s %-20s %-10s %-10s %-10s %-10s \n", "id", "name", "surname", "run100m", "run3km", "pressCnt", "jumpDist")
-
-	selectRecordsSQL := "SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance FROM athletes"
-
-	rows, err := pool.Query(ctx, selectRecordsSQL)
-	if err != nil {
-		return fmt.Errorf("impossible to print table: %w", err)
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var a Athlete
-		err := rows.Scan(&a.Id, &a.Name, &a.Surname, &a.Run100m, &a.Run3km, &a.PressCnt, &a.JumpDistance)
-		if err != nil {
-			return fmt.Errorf("impossible to print table: %w", err)
-		}
-
-		fmt.Printf("%-5d %-20s %-20s %-10.2f %-10.2f %-10d %-10.2f \n", a.Id, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance)
-	}
-
-	return nil
-}
-
-func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
-	// todo виділити це в окремий метод для отримання даних
+func SelectTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 	selectRecordsSQL := `SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance 
 		FROM athletes`
 
 	rows, err := pool.Query(ctx, selectRecordsSQL)
 	if err != nil {
-		return nil, fmt.Errorf("impossible to sort and print table: %w", err)
+		return nil, err
 	}
 
 	var athletes []Athlete
@@ -86,22 +58,9 @@ func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 		athletes = append(athletes, Athlete{})
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
-			return nil, fmt.Errorf("impossible to sort and print table: %w", err)
+			return nil, err
 		}
 	}
-
-	// Selection sort
-	n := len(athletes)
-	for i := 0; i < n-1; i++ {
-		minIndex := i
-		for j := i + 1; j < n; j++ {
-			if athletes[j].Run100m < athletes[minIndex].Run100m {
-				minIndex = j
-			}
-		}
-		athletes[i], athletes[minIndex] = athletes[minIndex], athletes[i]
-	}
-
 	return athletes, nil
 }
 
@@ -130,4 +89,23 @@ func UpdateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-// -----------------------------------------------------------------
+func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+	athletes, err := SelectTable(pool, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to sort table: %w", err)
+	}
+
+	// Selection sort
+	n := len(athletes)
+	for i := 0; i < n-1; i++ {
+		minIndex := i
+		for j := i + 1; j < n; j++ {
+			if athletes[j].Run100m < athletes[minIndex].Run100m {
+				minIndex = j
+			}
+		}
+		athletes[i], athletes[minIndex] = athletes[minIndex], athletes[i]
+	}
+
+	return athletes, nil
+}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"courseWork/backend"
 	"fmt"
@@ -27,6 +26,8 @@ func main() {
 			_, _ = fmt.Fprintf(os.Stderr, "Error closing log file: %v\n", err)
 		}
 	}()
+
+	// ---------------------------------------------
 
 	ctx := context.Background()
 
@@ -102,12 +103,14 @@ MainLoop:
 				continue
 			}
 		case 2:
-			err = backend.PrintTable(pool, ctx)
+			athletes, err := backend.SelectTable(pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
 				continue
 			}
+
+			printTable(athletes)
 
 		case 3:
 			inputIDs := takeInput("Введіть список id для видалення:")
@@ -196,61 +199,20 @@ MainLoop:
 			}
 
 		case 5:
-			// немає вводу від користувача
-			//
-			// відсортувати простою вибіркою
+			athletes, err := backend.SortTable(pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+
 		default:
 			fmt.Println("Спробуйте ще раз")
 			continue
 		}
 	}
-}
-
-// -----------------------------------------------------------------
-
-func printOptions() {
-	fmt.Println("")
-	fmt.Println("============================")
-	fmt.Println("0) Вийти з програми")
-	fmt.Println("1) Додати поле в таблицю")
-	fmt.Println("2) Вивести всю таблицю")
-	fmt.Println("3) Видалити поле(-я) з таблиці за id")
-	fmt.Println("4) Змінити поле таблиці за id")
-}
-
-func takeOption() (int, error) {
-	input := takeInput("Оберіть опцію:")
-
-	option, err := strconv.ParseInt(input, 10, 64)
-	if err != nil {
-		return -1, err
-	}
-
-	return int(option), nil
-}
-
-func takeInput(instruction string) (input string) {
-	for {
-		fmt.Println("")
-		fmt.Println(instruction)
-		fmt.Printf("-> ")
-		scanner := bufio.NewScanner(os.Stdin)
-
-		if scanner.Scan() {
-			input = scanner.Text()
-
-			if input == "" {
-				fmt.Println("Пустий рядок. Спробуйте ще раз")
-				fmt.Println("")
-
-				continue
-			}
-		}
-
-		break
-	}
-
-	return input
 }
 
 // -----------------------------------------------------------------
