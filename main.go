@@ -70,6 +70,64 @@ func main() {
 				log.Println(err)
 				os.Exit(1)
 			}
+		case 4:
+			inputID := takeInput("Введіть id поля для оновлення:")
+
+			parseId, err := strconv.ParseInt(inputID, 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			inputRecord := takeInput("Введіть оновленні значення запису:")
+
+			fields := strings.Fields(inputRecord)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного поля.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun100m, err := strconv.ParseFloat(fields[2], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun3km, err := strconv.ParseFloat(fields[3], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parsePressCnt, err := strconv.ParseInt(fields[4], 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseJumpDistance, err := strconv.ParseFloat(fields[5], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			a := Athlete{
+				int(parseId),
+				fields[0],
+				fields[1],
+				float32(parseRun100m),
+				float32(parseRun3km),
+				int(parsePressCnt),
+				float32(parseJumpDistance),
+			}
+
+			err = updateField(a, pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
 
 		default:
 			fmt.Println("Спробуйте ще раз")
@@ -77,6 +135,8 @@ func main() {
 		}
 	}
 }
+
+// -----------------------------------------------------------------
 
 func startupLogger() (*os.File, error) {
 	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -90,6 +150,8 @@ func startupLogger() (*os.File, error) {
 	return logFile, nil
 }
 
+// -----------------------------------------------------------------
+
 func printOptions() {
 	fmt.Println("")
 	fmt.Println("============================")
@@ -97,6 +159,7 @@ func printOptions() {
 	fmt.Println("1) Додати поле в таблицю")
 	fmt.Println("2) Вивести всю таблицю")
 	fmt.Println("3) Видалити поле(-я) з таблиці за id")
+	fmt.Println("4) Змінити поле таблиці за id")
 }
 
 func takeOption() (int, error) {
@@ -112,6 +175,7 @@ func takeOption() (int, error) {
 
 func takeInput(instruction string) (input string) {
 	for {
+		fmt.Println("")
 		fmt.Println(instruction)
 		fmt.Printf("-> ")
 		scanner := bufio.NewScanner(os.Stdin)
@@ -214,6 +278,19 @@ func deleteFields(pool *pgxpool.Pool, ctx context.Context) error {
 	_, err := pool.Exec(ctx, deleteRecordsSQL, fields)
 	if err != nil {
 		return fmt.Errorf("impossible to delete fields: %w", err)
+	}
+
+	return nil
+}
+
+func updateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
+	updateRecordSQL := `UPDATE athletes 
+		SET (name, surname, run_100m, run_3km, press_сnt, jump_distance) = ($1, $2, $3, $4, $5, $6) 
+		WHERE id = $7`
+
+	_, err := pool.Exec(ctx, updateRecordSQL, a.name, a.surname, a.run100m, a.run3km, a.pressCnt, a.jumpDistance, a.id)
+	if err != nil {
+		return fmt.Errorf("impossible to update field: %w", err)
 	}
 
 	return nil
