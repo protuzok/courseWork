@@ -35,6 +35,7 @@ func main() {
 	}
 	defer pool.Close()
 
+MainLoop:
 	for {
 		printOptions()
 
@@ -101,14 +102,36 @@ func main() {
 			err = printTable(pool, ctx)
 			if err != nil {
 				log.Println(err)
-				os.Exit(1)
+				fmt.Println("Спробуйте ще раз")
+				continue
 			}
 
 		case 3:
-			err = deleteFields(pool, ctx)
+			inputIDs := takeInput("Введіть список id для видалення:")
+
+			fields := strings.Fields(inputIDs)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного ID.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			ids := make([]int, len(fields))
+			for i, v := range fields {
+				parseIDs, err := strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					fmt.Println("Спробуйте ще раз")
+					continue MainLoop
+				}
+
+				ids[i] = int(parseIDs)
+			}
+
+			err = deleteFields(ids, pool, ctx)
 			if err != nil {
 				log.Println(err)
-				os.Exit(1)
+				fmt.Println("Спробуйте ще раз")
+				continue
 			}
 		case 4:
 			inputID := takeInput("Введіть id поля для оновлення:")

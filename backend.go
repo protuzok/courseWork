@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -72,18 +71,11 @@ func printTable(pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func deleteFields(pool *pgxpool.Pool, ctx context.Context) error {
-	input := takeInput("Введіть список id для видалення:")
-
-	fields := strings.Fields(input)
-	if len(fields) == 0 {
-		fmt.Println("Не введено жодного ID.")
-		return nil
-	}
+func deleteFields(ids []int, pool *pgxpool.Pool, ctx context.Context) error {
 
 	deleteRecordsSQL := "DELETE FROM athletes WHERE id = ANY($1::int[])"
 
-	_, err := pool.Exec(ctx, deleteRecordsSQL, fields)
+	_, err := pool.Exec(ctx, deleteRecordsSQL, ids)
 	if err != nil {
 		return fmt.Errorf("impossible to delete fields: %w", err)
 	}
