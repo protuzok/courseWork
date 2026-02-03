@@ -20,6 +20,7 @@ func printOptions() {
 	fmt.Println("6) Згрупувати таблицю за max press_cnt та min jump_distance, сортування за іменем")
 	fmt.Println("7) Вибрати усіх атлетів з run_3km з відхиленням ±7,359% від середнього")
 	fmt.Println("8) Вибрати усіх атлетів з min press_cnt та визначити для них відхилення результату run_100m")
+	fmt.Println("9) Вивести людей, у яких загальний результат буде найкращим за всіма показниками")
 }
 
 func takeOption() (int, error) {

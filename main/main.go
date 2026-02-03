@@ -235,6 +235,16 @@ MainLoop:
 
 			printTableTask4(athletes)
 
+		case 9:
+			athletes, err := backend.SelectBestTotalResult(pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+
 		default:
 			fmt.Println("Спробуйте ще раз")
 			continue

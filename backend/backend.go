@@ -159,13 +159,13 @@ func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete
 
 func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Task4Row, error) {
 	const query = `
-SELECT
-	name,
-	press_сnt,
-	run_100m,
-	run_100m / (SELECT AVG(run_100m) FROM athletes) as deviation
-FROM athletes
-WHERE press_сnt = (SELECT MIN(press_сnt) FROM athletes)`
+	SELECT
+		name,
+		press_сnt,
+		run_100m,
+		run_100m / (SELECT AVG(run_100m) FROM athletes) as deviation
+	FROM athletes
+	WHERE press_сnt = (SELECT MIN(press_сnt) FROM athletes)`
 
 	rows, err := pool.Query(ctx, query)
 	if err != nil {
@@ -179,6 +179,40 @@ WHERE press_сnt = (SELECT MIN(press_сnt) FROM athletes)`
 		err = rows.Scan(&athletes[i].Name, &athletes[i].PressCnt, &athletes[i].Run100m, &athletes[i].Deviation)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to do task 4: %w", err)
+		}
+	}
+
+	return athletes, nil
+}
+
+func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+	const query = `
+	WITH
+		Ranks AS (
+		SELECT
+			*,
+			RANK() OVER (ORDER BY run_100m) +
+			RANK() OVER (ORDER BY run_3km) +
+			RANK() OVER (ORDER BY press_сnt DESC) +
+			RANK() OVER (ORDER BY jump_distance DESC) as total_rank
+		FROM athletes
+	)
+	SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance
+	FROM Ranks
+	WHERE total_rank = (SELECT MIN(total_rank) FROM Ranks)`
+
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to select best total result: %w", err)
+	}
+
+	var athletes []Athlete
+
+	for i := 0; rows.Next(); i++ {
+		athletes = append(athletes, Athlete{})
+		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+		if err != nil {
+			return nil, fmt.Errorf("impossible to select best total result: %w", err)
 		}
 	}
 
