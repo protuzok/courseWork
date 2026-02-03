@@ -89,7 +89,7 @@ func UpdateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 	athletes, err := SelectTable(pool, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to sort table: %w", err)
@@ -110,7 +110,7 @@ func SortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 	return athletes, nil
 }
 
-func GroupAndSortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 	selectRecordsSQL := `SELECT * FROM athletes
 		WHERE press_сnt = (SELECT MAX(press_сnt) FROM athletes)
 		AND jump_distance = (SELECT MIN(jump_distance) FROM athletes)
@@ -128,6 +128,29 @@ func GroupAndSortTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, erro
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to group and sort table: %w", err)
+		}
+	}
+
+	return athletes, nil
+}
+
+func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+	selectRecordsSQL := `SELECT * FROM athletes
+		WHERE run_3km BETWEEN ((SELECT AVG(run_3km) FROM athletes) * (1 - 0.07359))
+		AND ((SELECT AVG(run_3km) FROM athletes) * (1 + 0.07359))`
+
+	rows, err := pool.Query(ctx, selectRecordsSQL)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to select by deviation: %w", err)
+	}
+
+	var athletes []Athlete
+
+	for i := 0; rows.Next(); i++ {
+		athletes = append(athletes, Athlete{})
+		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+		if err != nil {
+			return nil, fmt.Errorf("impossible to select by deviation: %w", err)
 		}
 	}
 

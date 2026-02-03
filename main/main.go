@@ -199,7 +199,7 @@ MainLoop:
 			}
 
 		case 5:
-			athletes, err := backend.SortTable(pool, ctx)
+			athletes, err := backend.SortByRun100m(pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -208,7 +208,16 @@ MainLoop:
 
 			printTable(athletes)
 		case 6:
-			athletes, err := backend.GroupAndSortTable(pool, ctx)
+			athletes, err := backend.GroupByPressAndJumpAndSortByName(pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+		case 7:
+			athletes, err := backend.SelectByDeviationRun3km(pool, ctx)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -221,6 +230,8 @@ MainLoop:
 			fmt.Println("Спробуйте ще раз")
 			continue
 		}
+
+		takeInput("Продовжити?")
 	}
 }
 

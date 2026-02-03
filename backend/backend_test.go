@@ -16,7 +16,7 @@ func TestSortTable(t *testing.T) {
 		t.Errorf("error to start up table: %s", err.Error())
 	}
 
-	gotAthletes, err := SortTable(pool, ctx)
+	gotAthletes, err := SortByRun100m(pool, ctx)
 	if err != nil {
 		t.Errorf("error to sort table: %s", err.Error())
 	}
