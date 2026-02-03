@@ -225,6 +225,15 @@ MainLoop:
 			}
 
 			printTable(athletes)
+		case 8:
+			athletes, err := backend.SelectByMinPressAndGetDeviationRun100m(pool, ctx)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTableTask4(athletes)
 
 		default:
 			fmt.Println("Спробуйте ще раз")

@@ -19,6 +19,7 @@ func printOptions() {
 	fmt.Println("5) Відсортувати таблицю за run_100m")
 	fmt.Println("6) Згрупувати таблицю за max press_cnt та min jump_distance, сортування за іменем")
 	fmt.Println("7) Вибрати усіх атлетів з run_3km з відхиленням ±7,359% від середнього")
+	fmt.Println("8) Вибрати усіх атлетів з min press_cnt та визначити для них відхилення результату run_100m")
 }
 
 func takeOption() (int, error) {
@@ -62,5 +63,14 @@ func printTable(athletes []backend.Athlete) {
 
 	for _, a := range athletes {
 		fmt.Printf("%-5d %-20s %-20s %-10.2f %-10.2f %-10d %-10.2f \n", a.Id, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance)
+	}
+}
+
+func printTableTask4(athletes []backend.Task4Row) {
+	fmt.Println("Таблиця атлетів:")
+	fmt.Printf("%-20s %-10s %-10s %-10s \n", "name", "run100m", "pressCnt", "deviation")
+
+	for _, a := range athletes {
+		fmt.Printf("%-20s %-10d %-10.2f %-10.2f \n", a.Name, a.PressCnt, a.Run100m, a.Deviation)
 	}
 }

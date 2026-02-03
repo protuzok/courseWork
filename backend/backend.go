@@ -156,3 +156,31 @@ func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete
 
 	return athletes, nil
 }
+
+func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Task4Row, error) {
+	const query = `
+SELECT
+	name,
+	press_сnt,
+	run_100m,
+	run_100m / (SELECT AVG(run_100m) FROM athletes) as deviation
+FROM athletes
+WHERE press_сnt = (SELECT MIN(press_сnt) FROM athletes)`
+
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to do task 4: %w", err)
+	}
+
+	var athletes []Task4Row
+
+	for i := 0; rows.Next(); i++ {
+		athletes = append(athletes, Task4Row{})
+		err = rows.Scan(&athletes[i].Name, &athletes[i].PressCnt, &athletes[i].Run100m, &athletes[i].Deviation)
+		if err != nil {
+			return nil, fmt.Errorf("impossible to do task 4: %w", err)
+		}
+	}
+
+	return athletes, nil
+}
