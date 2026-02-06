@@ -11,7 +11,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const dbURL = "postgres://user:password@localhost:5432/course_work_db"
+var dbURL = "postgres://user:password@localhost:5432/course_work_db"
+
+func init() {
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		dbURL = url
+	}
+}
 
 func main() {
 	repo, err := storage.NewAthleteRepository(context.Background(), dbURL)

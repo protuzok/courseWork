@@ -11,5 +11,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data # Щоб дані не зникали після перезапуску
 
+
+  server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: course-work-server
+    ports:
+      - "1323:1323"
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/course_work_db
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
