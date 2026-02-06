@@ -25,7 +25,7 @@ func main() {
 		}
 	}()
 
-	apiClient := api.NewClient("http://localhost:1323")
+	apiClient := api.NewService("http://localhost:1323")
 
 	//MainLoop:
 	for {
@@ -188,15 +188,15 @@ func main() {
 				continue
 			}
 
-		//case 5:
-		//	athletes, err := SortByRun100m(pool, ctx)
-		//	if err != nil {
-		//		log.Println(err)
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
-		//
-		//	printTable(athletes)
+		case 5:
+			athletes, err := apiClient.FetchAthletesSortedByRun100m()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
 		//case 6:
 		//	athletes, err := GroupByPressAndJumpAndSortByName(pool, ctx)
 		//	if err != nil {

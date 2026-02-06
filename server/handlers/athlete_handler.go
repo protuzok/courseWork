@@ -54,6 +54,15 @@ func (h *AthleteHandler) Update(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (h *AthleteHandler) FetchSorted(c echo.Context) error {
+	athletes, err := h.storage.GetAllSortedByRun100m(c.Request().Context())
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, athletes)
+}
+
 func (h *AthleteHandler) FetchBest(c echo.Context) error {
 	athletes, err := h.storage.GetBestOverallAthlete(c.Request().Context())
 	if err != nil {

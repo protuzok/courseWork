@@ -33,6 +33,7 @@ func main() {
 	g.POST("/create", handler.Create)
 	g.GET("/fetch/all", handler.FetchAll)
 	g.PUT("/update", handler.Update)
+	g.GET("/fetch/sorted", handler.FetchSorted)
 	g.GET("/fetch/best", handler.FetchBest)
 
 	e.Logger.Fatal(e.Start(":1323"))

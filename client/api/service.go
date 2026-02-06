@@ -9,16 +9,16 @@ import (
 	"net/http"
 )
 
-type Client struct {
+type Service struct {
 	BaseURL string
 }
 
-func NewClient(baseURL string) *Client {
-	return &Client{BaseURL: baseURL}
+func NewService(baseURL string) *Service {
+	return &Service{BaseURL: baseURL}
 }
 
-func (c *Client) CreateAthlete(a shared.Athlete) (string, error) {
-	url := fmt.Sprintf("%s/athlete/create", c.BaseURL)
+func (s *Service) CreateAthlete(a shared.Athlete) (string, error) {
+	url := fmt.Sprintf("%s/athlete/create", s.BaseURL)
 	jsonData, err := json.Marshal(a)
 	if err != nil {
 		return "", err
@@ -39,8 +39,8 @@ func (c *Client) CreateAthlete(a shared.Athlete) (string, error) {
 	return resp.Status, nil
 }
 
-func (c *Client) FetchBestAthletes() ([]shared.Athlete, error) {
-	url := fmt.Sprintf("%s/athlete/fetch/best", c.BaseURL)
+func (s *Service) FetchBestAthletes() ([]shared.Athlete, error) {
+	url := fmt.Sprintf("%s/athlete/fetch/best", s.BaseURL)
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (c *Client) FetchBestAthletes() ([]shared.Athlete, error) {
 	return athletes, nil
 }
 
-func (c *Client) FetchAthletes() ([]shared.Athlete, error) {
-	url := fmt.Sprintf("%s/athlete/fetch/all", c.BaseURL)
+func (s *Service) FetchAthletes() ([]shared.Athlete, error) {
+	url := fmt.Sprintf("%s/athlete/fetch/all", s.BaseURL)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -87,8 +87,8 @@ func (c *Client) FetchAthletes() ([]shared.Athlete, error) {
 	return athletes, nil
 }
 
-func (c *Client) UpdateAthlete(a shared.Athlete) error {
-	url := fmt.Sprintf("%s/athlete/update", c.BaseURL)
+func (s *Service) UpdateAthlete(a shared.Athlete) error {
+	url := fmt.Sprintf("%s/athlete/update", s.BaseURL)
 	marshalAthlete, err := json.Marshal(a)
 	if err != nil {
 		return err
@@ -109,4 +109,21 @@ func (c *Client) UpdateAthlete(a shared.Athlete) error {
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func (s *Service) FetchAthletesSortedByRun100m() ([]shared.Athlete, error) {
+	url := fmt.Sprintf("%s/athlete/fetch/sorted", s.BaseURL)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var athletes []shared.Athlete
+	err = json.NewDecoder(resp.Body).Decode(&athletes)
+	if err != nil {
+		return nil, err
+	}
+
+	return athletes, nil
 }
