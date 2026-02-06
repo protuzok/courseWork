@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: course-work-postgres
+    ports:
+      - "5432:5432"  # Прокидаємо порт: зліва (Windows/WSL) -> справа (всередині контейнера)
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: course_work_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Щоб дані не зникали після перезапуску
+
+volumes:
+  postgres_data:

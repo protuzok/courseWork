@@ -1,0 +1,256 @@
+package main
+
+import (
+	"courseWork/shared"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+)
+
+func main() {
+	logFile, err := startupLogger()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Logger start up")
+
+	defer func() {
+		err = logFile.Close()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Error closing log file: %v\n", err)
+		}
+	}()
+
+	//MainLoop:
+	for {
+		printOptions()
+
+		opt, err := takeOption()
+		if err != nil {
+			fmt.Println("Помилка вводу:", err)
+			continue
+		}
+
+		switch opt {
+		case 0:
+			return
+		case 1:
+			inputRecord := takeInput("Введіть значення полів запису:")
+
+			fields := strings.Fields(inputRecord)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного поля.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun100m, err := strconv.ParseFloat(fields[2], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun3km, err := strconv.ParseFloat(fields[3], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parsePressCnt, err := strconv.ParseInt(fields[4], 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseJumpDistance, err := strconv.ParseFloat(fields[5], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			a := shared.Athlete{
+				Id:           -1,
+				Name:         fields[0],
+				Surname:      fields[1],
+				Run100m:      float32(parseRun100m),
+				Run3km:       float32(parseRun3km),
+				PressCnt:     int(parsePressCnt),
+				JumpDistance: float32(parseJumpDistance),
+			}
+
+			status, err := createAthlete(a)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			fmt.Println(status)
+		case 2:
+			athletes, err := fetchAthletes()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+
+		//case 3:
+		//	inputIDs := takeInput("Введіть список id для видалення:")
+		//
+		//	fields := strings.Fields(inputIDs)
+		//	if len(fields) == 0 {
+		//		fmt.Println("Не введено жодного ID.")
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		//
+		//	ids := make([]int, len(fields))
+		//	for i, v := range fields {
+		//		parseIDs, err := strconv.ParseInt(v, 10, 64)
+		//		if err != nil {
+		//			fmt.Println("Спробуйте ще раз")
+		//			continue MainLoop
+		//		}
+		//
+		//		ids[i] = int(parseIDs)
+		//	}
+		//
+		//	err = DeleteFields(ids, pool, ctx)
+		//	if err != nil {
+		//		log.Println(err)
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		case 4:
+			inputID := takeInput("Введіть id поля для оновлення:")
+
+			parseId, err := strconv.ParseInt(inputID, 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			inputRecord := takeInput("Введіть оновленні значення запису:")
+
+			fields := strings.Fields(inputRecord)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного поля.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun100m, err := strconv.ParseFloat(fields[2], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseRun3km, err := strconv.ParseFloat(fields[3], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parsePressCnt, err := strconv.ParseInt(fields[4], 10, 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			parseJumpDistance, err := strconv.ParseFloat(fields[5], 64)
+			if err != nil {
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			a := shared.Athlete{
+				Id:           int(parseId),
+				Name:         fields[0],
+				Surname:      fields[1],
+				Run100m:      float32(parseRun100m),
+				Run3km:       float32(parseRun3km),
+				PressCnt:     int(parsePressCnt),
+				JumpDistance: float32(parseJumpDistance),
+			}
+
+			err = updateAthlete(a)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+		//case 5:
+		//	athletes, err := SortByRun100m(pool, ctx)
+		//	if err != nil {
+		//		log.Println(err)
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		//
+		//	printTable(athletes)
+		//case 6:
+		//	athletes, err := GroupByPressAndJumpAndSortByName(pool, ctx)
+		//	if err != nil {
+		//		log.Println(err)
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		//
+		//	printTable(athletes)
+		//case 7:
+		//	athletes, err := SelectByDeviationRun3km(pool, ctx)
+		//	if err != nil {
+		//		log.Println(err)
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		//
+		//	printTable(athletes)
+		//case 8:
+		//	athletes, err := SelectByMinPressAndGetDeviationRun100m(pool, ctx)
+		//	if err != nil {
+		//		log.Println(err)
+		//		fmt.Println("Спробуйте ще раз")
+		//		continue
+		//	}
+		//
+		//	printTableTask4(athletes)
+		//
+		case 9:
+			athletes, err := fetchBestAthletes()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+
+		default:
+			fmt.Println("Спробуйте ще раз")
+			continue
+		}
+
+		takeInput("Продовжити?")
+	}
+}
+
+// -----------------------------------------------------------------
+
+func startupLogger() (*os.File, error) {
+	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("impossible to open log file: %w", err)
+	}
+
+	log.SetOutput(logFile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	return logFile, nil
+}

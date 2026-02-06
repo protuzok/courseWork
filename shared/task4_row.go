@@ -1,4 +1,4 @@
-package backend
+package shared
 
 type Task4Row struct {
 	Name      string

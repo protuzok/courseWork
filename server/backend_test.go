@@ -1,14 +1,14 @@
-package backend
+package main
 
 import (
 	"context"
+	"courseWork/shared"
 	"slices"
 	"testing"
 )
 
-const dbURL = "postgres://user:password@localhost:5432/test_course_work_db"
-
 func TestSortTable(t *testing.T) {
+	const dbURL = "postgres://user:password@localhost:5432/test_course_work_db"
 	ctx := context.Background()
 
 	pool, err := StartupTable(ctx, dbURL)
@@ -21,7 +21,7 @@ func TestSortTable(t *testing.T) {
 		t.Errorf("error to sort table: %s", err.Error())
 	}
 
-	var wantAthletes = []Athlete{
+	var wantAthletes = []shared.Athlete{
 		{3, "класно", "цу", 1, 2, 3, 4},
 		{1, "привіт", "руслан", 3.4, 2, 5, 8},
 		{4, "крутяк", "кербе", 10, 20, 30, 40},

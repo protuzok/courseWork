@@ -1,10 +1,12 @@
-package backend
+package main
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"courseWork/shared"
 )
 
 func StartupTable(ctx context.Context, dbURL string) (p *pgxpool.Pool, err error) {
@@ -30,7 +32,7 @@ func StartupTable(ctx context.Context, dbURL string) (p *pgxpool.Pool, err error
 	return p, nil
 }
 
-func AddField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
+func AddField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	insertRecordSQL := `INSERT INTO athletes
     	(name, surname, run_100m, run_3km, press_сnt, jump_distance) 
 		VALUES ($1, $2, $3, $4, $5, $6)`
@@ -43,7 +45,7 @@ func AddField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func SelectTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func SelectTable(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
 	selectRecordsSQL := `SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance 
 		FROM athletes`
 
@@ -52,10 +54,10 @@ func SelectTable(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 		return nil, err
 	}
 
-	var athletes []Athlete
+	var athletes []shared.Athlete
 
 	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, Athlete{})
+		athletes = append(athletes, shared.Athlete{})
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
 			return nil, err
@@ -76,7 +78,7 @@ func DeleteFields(ids []int, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func UpdateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
+func UpdateField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	updateRecordSQL := `UPDATE athletes 
 		SET (name, surname, run_100m, run_3km, press_сnt, jump_distance) = ($1, $2, $3, $4, $5, $6) 
 		WHERE id = $7`
@@ -89,7 +91,7 @@ func UpdateField(a Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
 	athletes, err := SelectTable(pool, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to sort table: %w", err)
@@ -110,7 +112,7 @@ func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
 	return athletes, nil
 }
 
-func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
 	selectRecordsSQL := `SELECT * FROM athletes
 		WHERE press_сnt = (SELECT MAX(press_сnt) FROM athletes)
 		AND jump_distance = (SELECT MIN(jump_distance) FROM athletes)
@@ -121,10 +123,10 @@ func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) (
 		return nil, fmt.Errorf("impossible to group and sort table: %w", err)
 	}
 
-	var athletes []Athlete
+	var athletes []shared.Athlete
 
 	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, Athlete{})
+		athletes = append(athletes, shared.Athlete{})
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to group and sort table: %w", err)
@@ -134,7 +136,7 @@ func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) (
 	return athletes, nil
 }
 
-func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
 	selectRecordsSQL := `SELECT * FROM athletes
 		WHERE run_3km BETWEEN ((SELECT AVG(run_3km) FROM athletes) * (1 - 0.07359))
 		AND ((SELECT AVG(run_3km) FROM athletes) * (1 + 0.07359))`
@@ -144,10 +146,10 @@ func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete
 		return nil, fmt.Errorf("impossible to select by deviation: %w", err)
 	}
 
-	var athletes []Athlete
+	var athletes []shared.Athlete
 
 	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, Athlete{})
+		athletes = append(athletes, shared.Athlete{})
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to select by deviation: %w", err)
@@ -157,7 +159,7 @@ func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]Athlete
 	return athletes, nil
 }
 
-func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Context) ([]Task4Row, error) {
+func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Context) ([]shared.Task4Row, error) {
 	const query = `
 	SELECT
 		name,
@@ -172,10 +174,10 @@ func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Cont
 		return nil, fmt.Errorf("impossible to do task 4: %w", err)
 	}
 
-	var athletes []Task4Row
+	var athletes []shared.Task4Row
 
 	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, Task4Row{})
+		athletes = append(athletes, shared.Task4Row{})
 		err = rows.Scan(&athletes[i].Name, &athletes[i].PressCnt, &athletes[i].Run100m, &athletes[i].Deviation)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to do task 4: %w", err)
@@ -185,7 +187,7 @@ func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Cont
 	return athletes, nil
 }
 
-func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, error) {
+func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
 	const query = `
 	WITH
 		Ranks AS (
@@ -206,10 +208,10 @@ func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]Athlete, 
 		return nil, fmt.Errorf("impossible to select best total result: %w", err)
 	}
 
-	var athletes []Athlete
+	var athletes []shared.Athlete
 
 	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, Athlete{})
+		athletes = append(athletes, shared.Athlete{})
 		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to select best total result: %w", err)

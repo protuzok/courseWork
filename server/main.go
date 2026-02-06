@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"courseWork/backend"
+	"courseWork/shared"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 const dbURL = "postgres://user:password@localhost:5432/course_work_db"
 
 func main() {
-	pool, err := backend.StartupTable(context.Background(), dbURL)
+	pool, err := StartupTable(context.Background(), dbURL)
 	if err != nil {
 		fmt.Println("Помилка старту таблиці бази даних: ", err)
 		log.Println(err)
@@ -28,12 +28,12 @@ func main() {
 	}(e)
 
 	e.POST("/athlete/create", func(c echo.Context) error {
-		a := new(backend.Athlete)
+		a := new(shared.Athlete)
 		err := c.Bind(a)
 		if err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
-		err = backend.AddField(*a, pool, c.Request().Context())
+		err = AddField(*a, pool, c.Request().Context())
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func main() {
 	})
 
 	e.GET("/athlete/fetch/all", func(c echo.Context) error {
-		athletes, err := backend.SelectTable(pool, c.Request().Context())
+		athletes, err := SelectTable(pool, c.Request().Context())
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
@@ -51,13 +51,13 @@ func main() {
 	})
 
 	e.PUT("/athlete/update", func(c echo.Context) error {
-		a := &backend.Athlete{}
+		a := &shared.Athlete{}
 		err := c.Bind(a)
 		if err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
 
-		err = backend.UpdateField(*a, pool, c.Request().Context())
+		err = UpdateField(*a, pool, c.Request().Context())
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
@@ -66,7 +66,7 @@ func main() {
 	})
 
 	e.GET("/athlete/fetch/best", func(c echo.Context) error {
-		athletes, err := backend.SelectBestTotalResult(pool, c.Request().Context())
+		athletes, err := SelectBestTotalResult(pool, c.Request().Context())
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}

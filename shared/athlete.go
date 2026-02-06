@@ -1,4 +1,4 @@
-package backend
+package shared
 
 type Athlete struct {
 	Id           int     `json:"id"`
