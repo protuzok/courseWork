@@ -27,7 +27,7 @@ func main() {
 
 	apiClient := api.NewService("http://localhost:1323")
 
-	//MainLoop:
+MainLoop:
 	for {
 		printOptions()
 
@@ -102,33 +102,33 @@ func main() {
 
 			printTable(athletes)
 
-		//case 3:
-		//	inputIDs := takeInput("Введіть список id для видалення:")
-		//
-		//	fields := strings.Fields(inputIDs)
-		//	if len(fields) == 0 {
-		//		fmt.Println("Не введено жодного ID.")
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
-		//
-		//	ids := make([]int, len(fields))
-		//	for i, v := range fields {
-		//		parseIDs, err := strconv.ParseInt(v, 10, 64)
-		//		if err != nil {
-		//			fmt.Println("Спробуйте ще раз")
-		//			continue MainLoop
-		//		}
-		//
-		//		ids[i] = int(parseIDs)
-		//	}
-		//
-		//	err = DeleteFields(ids, pool, ctx)
-		//	if err != nil {
-		//		log.Println(err)
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
+		case 3:
+			inputIDs := takeInput("Введіть список id для видалення:")
+
+			fields := strings.Fields(inputIDs)
+			if len(fields) == 0 {
+				fmt.Println("Не введено жодного ID.")
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			ids := make([]int, len(fields))
+			for i, v := range fields {
+				parseIDs, err := strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					fmt.Println("Спробуйте ще раз")
+					continue MainLoop
+				}
+
+				ids[i] = int(parseIDs)
+			}
+
+			err = apiClient.DeleteAthletes(ids)
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
 		case 4:
 			inputID := takeInput("Введіть id поля для оновлення:")
 
@@ -197,34 +197,33 @@ func main() {
 			}
 
 			printTable(athletes)
-		//case 6:
-		//	athletes, err := GroupByPressAndJumpAndSortByName(pool, ctx)
-		//	if err != nil {
-		//		log.Println(err)
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
-		//
-		//	printTable(athletes)
-		//case 7:
-		//	athletes, err := SelectByDeviationRun3km(pool, ctx)
-		//	if err != nil {
-		//		log.Println(err)
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
-		//
-		//	printTable(athletes)
-		//case 8:
-		//	athletes, err := SelectByMinPressAndGetDeviationRun100m(pool, ctx)
-		//	if err != nil {
-		//		log.Println(err)
-		//		fmt.Println("Спробуйте ще раз")
-		//		continue
-		//	}
-		//
-		//	printTableTask4(athletes)
-		//
+		case 6:
+			athletes, err := apiClient.FetchBestPressMinJump()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+		case 7:
+			athletes, err := apiClient.FetchWithRun3kmDeviation()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTable(athletes)
+		case 8:
+			stats, err := apiClient.FetchMinPressRun100mStats()
+			if err != nil {
+				log.Println(err)
+				fmt.Println("Спробуйте ще раз")
+				continue
+			}
+
+			printTableTask4(stats)
 		case 9:
 			athletes, err := apiClient.FetchBestAthletes()
 			if err != nil {

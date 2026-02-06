@@ -67,11 +67,11 @@ func printTable(athletes []shared.Athlete) {
 	}
 }
 
-//func printTableTask4(athletes []Athlete) {
-//	fmt.Println("Таблиця атлетів:")
-//	fmt.Printf("%-20s %-10s %-10s %-10s \n", "name", "run100m", "pressCnt", "deviation")
-//
-//	for _, a := range athletes {
-//		fmt.Printf("%-20s %-10d %-10.2f %-10.2f \n", a.Name, a.PressCnt, a.Run100m, a.Deviation)
-//	}
-//}
+func printTableTask4(rows []shared.Task4Row) {
+	fmt.Println("Таблиця атлетів:")
+	fmt.Printf("%-20s %-10s %-10s %-10s \n", "name", "run100m", "pressCnt", "deviation")
+
+	for _, a := range rows {
+		fmt.Printf("%-20s %-10d %-10.2f %-10.2f \n", a.Name, a.PressCnt, a.Run100m, a.Deviation)
+	}
+}

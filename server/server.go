@@ -32,9 +32,13 @@ func main() {
 	g := e.Group("/athlete")
 	g.POST("/create", handler.Create)
 	g.GET("/fetch/all", handler.FetchAll)
+	g.DELETE("/delete", handler.Delete)
 	g.PUT("/update", handler.Update)
 	g.GET("/fetch/sorted", handler.FetchSorted)
 	g.GET("/fetch/best", handler.FetchBest)
+	g.GET("/fetch/best_press_min_jump", handler.FetchBestPressMinJump)
+	g.GET("/fetch/deviation_run_3km", handler.FetchWithRun3kmDeviation)
+	g.GET("/fetch/min_press_run_100m_stats", handler.FetchMinPressRun100mStats)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }
