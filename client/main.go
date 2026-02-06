@@ -1,6 +1,7 @@
 package main
 
 import (
+	"courseWork/client/api"
 	"courseWork/shared"
 	"fmt"
 	"log"
@@ -23,6 +24,8 @@ func main() {
 			_, _ = fmt.Fprintf(os.Stderr, "Error closing log file: %v\n", err)
 		}
 	}()
+
+	apiClient := api.NewClient("http://localhost:1323")
 
 	//MainLoop:
 	for {
@@ -81,7 +84,7 @@ func main() {
 				JumpDistance: float32(parseJumpDistance),
 			}
 
-			status, err := createAthlete(a)
+			status, err := apiClient.CreateAthlete(a)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -90,7 +93,7 @@ func main() {
 
 			fmt.Println(status)
 		case 2:
-			athletes, err := fetchAthletes()
+			athletes, err := apiClient.FetchAthletes()
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -178,7 +181,7 @@ func main() {
 				JumpDistance: float32(parseJumpDistance),
 			}
 
-			err = updateAthlete(a)
+			err = apiClient.UpdateAthlete(a)
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")
@@ -223,7 +226,7 @@ func main() {
 		//	printTableTask4(athletes)
 		//
 		case 9:
-			athletes, err := fetchBestAthletes()
+			athletes, err := apiClient.FetchBestAthletes()
 			if err != nil {
 				log.Println(err)
 				fmt.Println("Спробуйте ще раз")

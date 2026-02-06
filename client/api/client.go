@@ -1,15 +1,24 @@
-package main
+package api
 
 import (
 	"bytes"
 	"courseWork/shared"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
-func createAthlete(a shared.Athlete) (string, error) {
-	const url = "http://localhost:1323/athlete/create"
+type Client struct {
+	BaseURL string
+}
+
+func NewClient(baseURL string) *Client {
+	return &Client{BaseURL: baseURL}
+}
+
+func (c *Client) CreateAthlete(a shared.Athlete) (string, error) {
+	url := fmt.Sprintf("%s/athlete/create", c.BaseURL)
 	jsonData, err := json.Marshal(a)
 	if err != nil {
 		return "", err
@@ -30,8 +39,8 @@ func createAthlete(a shared.Athlete) (string, error) {
 	return resp.Status, nil
 }
 
-func fetchBestAthletes() ([]shared.Athlete, error) {
-	const url = "http://localhost:1323/athlete/fetch/best"
+func (c *Client) FetchBestAthletes() ([]shared.Athlete, error) {
+	url := fmt.Sprintf("%s/athlete/fetch/best", c.BaseURL)
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -51,8 +60,8 @@ func fetchBestAthletes() ([]shared.Athlete, error) {
 	return athletes, nil
 }
 
-func fetchAthletes() ([]shared.Athlete, error) {
-	const url = "http://localhost:1323/athlete/fetch/all"
+func (c *Client) FetchAthletes() ([]shared.Athlete, error) {
+	url := fmt.Sprintf("%s/athlete/fetch/all", c.BaseURL)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -78,8 +87,8 @@ func fetchAthletes() ([]shared.Athlete, error) {
 	return athletes, nil
 }
 
-func updateAthlete(a shared.Athlete) error {
-	const url = "http://localhost:1323/athlete/update"
+func (c *Client) UpdateAthlete(a shared.Athlete) error {
+	url := fmt.Sprintf("%s/athlete/update", c.BaseURL)
 	marshalAthlete, err := json.Marshal(a)
 	if err != nil {
 		return err

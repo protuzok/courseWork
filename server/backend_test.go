@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"courseWork/server/storage"
 	"courseWork/shared"
 	"slices"
 	"testing"
@@ -10,15 +11,14 @@ import (
 func TestSortTable(t *testing.T) {
 	const dbURL = "postgres://user:password@localhost:5432/test_course_work_db"
 	ctx := context.Background()
-
-	pool, err := StartupTable(ctx, dbURL)
+	repo, err := storage.NewAthleteRepository(ctx, dbURL)
 	if err != nil {
-		t.Errorf("error to start up table: %s", err.Error())
+		t.Fatalf("error to start up table: %s", err.Error())
 	}
 
-	gotAthletes, err := SortByRun100m(pool, ctx)
+	gotAthletes, err := repo.GetAllSortedByRun100m(ctx)
 	if err != nil {
-		t.Errorf("error to sort table: %s", err.Error())
+		t.Fatalf("error to sort table: %s", err.Error())
 	}
 
 	var wantAthletes = []shared.Athlete{

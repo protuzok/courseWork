@@ -1,16 +1,19 @@
-package main
+package storage
 
 import (
 	"context"
+	"courseWork/shared"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"courseWork/shared"
 )
 
-func StartupTable(ctx context.Context, dbURL string) (p *pgxpool.Pool, err error) {
-	p, err = pgxpool.New(ctx, dbURL)
+type AthleteRepository struct {
+	db *pgxpool.Pool
+}
+
+func NewAthleteRepository(ctx context.Context, dbURL string) (*AthleteRepository, error) {
+	p, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("error start up data base table: %w", err)
 	}
@@ -27,17 +30,23 @@ func StartupTable(ctx context.Context, dbURL string) (p *pgxpool.Pool, err error
 
 	_, err = p.Exec(ctx, createTableSQL)
 	if err != nil {
-		return nil, fmt.Errorf("error start up data base table: %w", err)
+		p.Close()
+		return nil, fmt.Errorf("error creating table: %w", err)
 	}
-	return p, nil
+
+	return &AthleteRepository{db: p}, nil
 }
 
-func AddField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) error {
+func (r *AthleteRepository) Close() {
+	r.db.Close()
+}
+
+func (r *AthleteRepository) Create(ctx context.Context, a shared.Athlete) error {
 	insertRecordSQL := `INSERT INTO athletes
     	(name, surname, run_100m, run_3km, press_сnt, jump_distance) 
 		VALUES ($1, $2, $3, $4, $5, $6)`
 
-	_, err := pool.Exec(ctx, insertRecordSQL, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance)
+	_, err := r.db.Exec(ctx, insertRecordSQL, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance)
 	if err != nil {
 		return fmt.Errorf("impossible to add field: %w", err)
 	}
@@ -45,32 +54,38 @@ func AddField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func SelectTable(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
+func (r *AthleteRepository) GetAll(ctx context.Context) ([]shared.Athlete, error) {
 	selectRecordsSQL := `SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance 
 		FROM athletes`
 
-	rows, err := pool.Query(ctx, selectRecordsSQL)
+	rows, err := r.db.Query(ctx, selectRecordsSQL)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var athletes []shared.Athlete
 
-	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, shared.Athlete{})
-		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+	for rows.Next() {
+		var a shared.Athlete
+		err = rows.Scan(&a.Id, &a.Name, &a.Surname, &a.Run100m, &a.Run3km, &a.PressCnt, &a.JumpDistance)
 		if err != nil {
 			return nil, err
 		}
+		athletes = append(athletes, a)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return athletes, nil
 }
 
-func DeleteFields(ids []int, pool *pgxpool.Pool, ctx context.Context) error {
-
+func (r *AthleteRepository) Delete(ctx context.Context, ids []int) error {
 	deleteRecordsSQL := "DELETE FROM athletes WHERE id = ANY($1::int[])"
 
-	_, err := pool.Exec(ctx, deleteRecordsSQL, ids)
+	_, err := r.db.Exec(ctx, deleteRecordsSQL, ids)
 	if err != nil {
 		return fmt.Errorf("impossible to delete fields: %w", err)
 	}
@@ -78,12 +93,12 @@ func DeleteFields(ids []int, pool *pgxpool.Pool, ctx context.Context) error {
 	return nil
 }
 
-func UpdateField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) error {
+func (r *AthleteRepository) Update(ctx context.Context, a shared.Athlete) error {
 	updateRecordSQL := `UPDATE athletes 
 		SET (name, surname, run_100m, run_3km, press_сnt, jump_distance) = ($1, $2, $3, $4, $5, $6) 
 		WHERE id = $7`
 
-	_, err := pool.Exec(ctx, updateRecordSQL, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance, a.Id)
+	_, err := r.db.Exec(ctx, updateRecordSQL, a.Name, a.Surname, a.Run100m, a.Run3km, a.PressCnt, a.JumpDistance, a.Id)
 	if err != nil {
 		return fmt.Errorf("impossible to update field: %w", err)
 	}
@@ -91,8 +106,8 @@ func UpdateField(a shared.Athlete, pool *pgxpool.Pool, ctx context.Context) erro
 	return nil
 }
 
-func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
-	athletes, err := SelectTable(pool, ctx)
+func (r *AthleteRepository) GetAllSortedByRun100m(ctx context.Context) ([]shared.Athlete, error) {
+	athletes, err := r.GetAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to sort table: %w", err)
 	}
@@ -112,54 +127,56 @@ func SortByRun100m(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, e
 	return athletes, nil
 }
 
-func GroupByPressAndJumpAndSortByName(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
-	selectRecordsSQL := `SELECT * FROM athletes
+func (r *AthleteRepository) GetBestPressMinJump(ctx context.Context) ([]shared.Athlete, error) {
+	selectRecordsSQL := `SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance FROM athletes
 		WHERE press_сnt = (SELECT MAX(press_сnt) FROM athletes)
 		AND jump_distance = (SELECT MIN(jump_distance) FROM athletes)
 		ORDER BY name`
 
-	rows, err := pool.Query(ctx, selectRecordsSQL)
+	rows, err := r.db.Query(ctx, selectRecordsSQL)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to group and sort table: %w", err)
 	}
+	defer rows.Close()
 
 	var athletes []shared.Athlete
-
-	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, shared.Athlete{})
-		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+	for rows.Next() {
+		var a shared.Athlete
+		err = rows.Scan(&a.Id, &a.Name, &a.Surname, &a.Run100m, &a.Run3km, &a.PressCnt, &a.JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to group and sort table: %w", err)
 		}
+		athletes = append(athletes, a)
 	}
 
 	return athletes, nil
 }
 
-func SelectByDeviationRun3km(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
-	selectRecordsSQL := `SELECT * FROM athletes
+func (r *AthleteRepository) GetWithRun3kmDeviation(ctx context.Context) ([]shared.Athlete, error) {
+	selectRecordsSQL := `SELECT id, name, surname, run_100m, run_3km, press_сnt, jump_distance FROM athletes
 		WHERE run_3km BETWEEN ((SELECT AVG(run_3km) FROM athletes) * (1 - 0.07359))
 		AND ((SELECT AVG(run_3km) FROM athletes) * (1 + 0.07359))`
 
-	rows, err := pool.Query(ctx, selectRecordsSQL)
+	rows, err := r.db.Query(ctx, selectRecordsSQL)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to select by deviation: %w", err)
 	}
+	defer rows.Close()
 
 	var athletes []shared.Athlete
-
-	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, shared.Athlete{})
-		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+	for rows.Next() {
+		var a shared.Athlete
+		err = rows.Scan(&a.Id, &a.Name, &a.Surname, &a.Run100m, &a.Run3km, &a.PressCnt, &a.JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to select by deviation: %w", err)
 		}
+		athletes = append(athletes, a)
 	}
 
 	return athletes, nil
 }
 
-func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Context) ([]shared.Task4Row, error) {
+func (r *AthleteRepository) GetMinPressRun100mStats(ctx context.Context) ([]shared.Task4Row, error) {
 	const query = `
 	SELECT
 		name,
@@ -169,25 +186,26 @@ func SelectByMinPressAndGetDeviationRun100m(pool *pgxpool.Pool, ctx context.Cont
 	FROM athletes
 	WHERE press_сnt = (SELECT MIN(press_сnt) FROM athletes)`
 
-	rows, err := pool.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to do task 4: %w", err)
 	}
+	defer rows.Close()
 
 	var athletes []shared.Task4Row
-
-	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, shared.Task4Row{})
-		err = rows.Scan(&athletes[i].Name, &athletes[i].PressCnt, &athletes[i].Run100m, &athletes[i].Deviation)
+	for rows.Next() {
+		var a shared.Task4Row
+		err = rows.Scan(&a.Name, &a.PressCnt, &a.Run100m, &a.Deviation)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to do task 4: %w", err)
 		}
+		athletes = append(athletes, a)
 	}
 
 	return athletes, nil
 }
 
-func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]shared.Athlete, error) {
+func (r *AthleteRepository) GetBestOverallAthlete(ctx context.Context) ([]shared.Athlete, error) {
 	const query = `
 	WITH
 		Ranks AS (
@@ -203,19 +221,20 @@ func SelectBestTotalResult(pool *pgxpool.Pool, ctx context.Context) ([]shared.At
 	FROM Ranks
 	WHERE total_rank = (SELECT MIN(total_rank) FROM Ranks)`
 
-	rows, err := pool.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("impossible to select best total result: %w", err)
 	}
+	defer rows.Close()
 
 	var athletes []shared.Athlete
-
-	for i := 0; rows.Next(); i++ {
-		athletes = append(athletes, shared.Athlete{})
-		err = rows.Scan(&athletes[i].Id, &athletes[i].Name, &athletes[i].Surname, &athletes[i].Run100m, &athletes[i].Run3km, &athletes[i].PressCnt, &athletes[i].JumpDistance)
+	for rows.Next() {
+		var a shared.Athlete
+		err = rows.Scan(&a.Id, &a.Name, &a.Surname, &a.Run100m, &a.Run3km, &a.PressCnt, &a.JumpDistance)
 		if err != nil {
 			return nil, fmt.Errorf("impossible to select best total result: %w", err)
 		}
+		athletes = append(athletes, a)
 	}
 
 	return athletes, nil
